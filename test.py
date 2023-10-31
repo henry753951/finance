@@ -24,14 +24,21 @@ def getHistoryEquityPreYear(stock_id: str):
     soup = BeautifulSoup(response.text, "html.parser")
     soup = soup.find("table", {"id": "tblDetail"})
     rows = soup.find_all("tr")
-    rows = [row.find("td").text for row in rows]
+    data = []
     for row in rows:
         try:
-            print(row[1])
-            print(int(str(row[1]).replace(",","")))
-        except ValueError:
+            cols = row.find_all("td")
+            year = cols[0].text if 'Q' not in cols[0].text else "20" + cols[0].text.split("Q")[0]
+            equity = int(str(cols[1].text.replace(",","")))
+        except:
             continue
-
+        data.append({
+            "year": year,
+            "equity": equity
+        })
+    print(data)
+        
+     
 
 def main():
     stock_id = "2330"
