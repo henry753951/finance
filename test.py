@@ -14,24 +14,28 @@ def getHistoryData(id: str):
     return stockData
 
 
-async def getHistoryEquityPreYear(stock_id: str):
-    response = requests.post(url, headers=headers + {
-                          "Referer": F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}"})
+
+
+def getHistoryEquityPreYear(stock_id: str):
+    refer = {
+        "Referer": F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}"
+    }
+    response = requests.post(F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}", headers={**headers, **refer})
     soup = BeautifulSoup(response.text, "html.parser")
-
+    soup = soup.find("table", {"id": "tblDetail"})
     rows = soup.find_all("tr")
+    rows = [row.find("td").text for row in rows]
+    for row in rows:
+        try:
+            print(row[1])
+            print(int(str(row[1]).replace(",","")))
+        except ValueError:
+            continue
 
-    print(rows)
 
-
-
-
-
-
-async def main():
+def main():
     stock_id = "2330"
-    await getHistoryEquityPreYear(stock_id)
-
+    getHistoryEquityPreYear(stock_id)
 
 
 if __name__ == "__main__":
