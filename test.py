@@ -14,6 +14,7 @@ def getHistoryData(id: str):
     return stockData
 
 
-async def getHistoryEquityPreYear():
-    response = httpx.get(url, headers=headers)
+async def getHistoryEquityPreYear(stock_id: str):
+    response = httpx.post(url, headers=headers + {
+                          "Referer": F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}"})
     soup = BeautifulSoup(response.text, "html.parser")
