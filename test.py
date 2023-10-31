@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 import yfinance as yf
 import requests
 
-url = "https://tw.stock.yahoo.com/quote/2330.TW/"
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.150 Safari/537.36"
 }
@@ -24,7 +23,7 @@ def getHistoryEquityPreYear(stock_id: str):
     soup = BeautifulSoup(response.text, "html.parser")
     soup = soup.find("table", {"id": "tblDetail"})
     rows = soup.find_all("tr")
-    data = []
+    data = {}
     for row in rows:
         try:
             cols = row.find_all("td")
@@ -32,18 +31,34 @@ def getHistoryEquityPreYear(stock_id: str):
             equity = int(str(cols[1].text.replace(",","")))
         except:
             continue
-        data.append({
-            "year": year,
-            "equity": equity
-        })
-    print(data)
+        data[year] = equity
+    return data
         
      
 
 def main():
     stock_id = "2330"
-    getHistoryEquityPreYear(stock_id)
+    # getHistoryEquityPreYear(stock_id)
+    df = getHistoryData(stock_id)
+    equity = getHistoryEquityPreYear(stock_id)
+    dataLs=[]
+    for index, row in df.iterrows():
+        data = {
+            "date":str(row.name),
+            "close":row["Close"],
+            "open":row["Open"],
+            "high":row["High"],
+            "low":row["Low"],
+            "volume":row["Volume"],
+            "dividends":row["Dividends"],
+            "stock splits":row["Stock Splits"],
+            "equity":equity[str(row.name)[0:4]]*row["Close"]
+        }
+        dataLs.append(data)
 
+        
+    print(dataLs[0])
+    print(equity["2002"])
 
 if __name__ == "__main__":
     main()
