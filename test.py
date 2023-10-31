@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import yfinance as yf
-import httpx
+import requests
 
 url = "https://tw.stock.yahoo.com/quote/2330.TW/"
 headers = {
@@ -15,6 +15,24 @@ def getHistoryData(id: str):
 
 
 async def getHistoryEquityPreYear(stock_id: str):
-    response = httpx.post(url, headers=headers + {
+    response = requests.post(url, headers=headers + {
                           "Referer": F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}"})
     soup = BeautifulSoup(response.text, "html.parser")
+
+    rows = soup.find_all("tr")
+
+    print(rows)
+
+
+
+
+
+
+async def main():
+    stock_id = "2330"
+    await getHistoryEquityPreYear(stock_id)
+
+
+
+if __name__ == "__main__":
+    main()
