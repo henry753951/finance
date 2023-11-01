@@ -5,7 +5,7 @@ from datetime import datetime as dt
 
 
 def main():
-    stocks = utils.get_all_stock(1101, 10000)
+    stocks = utils.get_all_stock(1101, 5000)
     print(len(stocks))
     for stock in stocks:
         print(stock.stock_id)
