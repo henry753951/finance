@@ -12,7 +12,7 @@ form_data = {
     'firstin':'1',
     'off':'1',
     'TYPEK':'sii',
-    'year':'80',
+    'year':'81',
 }
 r = requests.post(url, data=form_data)
 df = pd.read_html(r.text)[10]

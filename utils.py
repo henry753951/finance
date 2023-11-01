@@ -36,8 +36,7 @@ def get_stock_daily(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
-    for _, row in df.iterrows():
-        row['year'] = row['date'][0:4]
+    df["year"] = df['date'].map(lambda x: x.year)
     df['date'] = pd.to_datetime(df['date'])
     return df
 

@@ -20,6 +20,7 @@ def getHistoryEquityPreYear(stock_id: str) -> dict[str, int]:
             "Referer": F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}"
         }
         response = requests.post(F"https://goodinfo.tw/tw/StockAssetsStatus.asp?STOCK_ID={stock_id}", headers={**headers, **refer})
+        # print(response.text)
         soup = BeautifulSoup(response.text, "html.parser")
         soup = soup.find("table", {"id": "tblDetail"})
         rows = soup.find_all("tr")
