@@ -36,8 +36,9 @@ def get_stock_daily(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
-    df["year"] = df['date'].map(lambda x: x.year)
+
     df['date'] = pd.to_datetime(df['date'])
+    df["year"] = df['date'].map(lambda x: x.year)
     return df
 
 
@@ -48,6 +49,8 @@ def get_stock_per_pbr(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
+
+    df['date'] = pd.to_datetime(df['date'])
     return df
 
 def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
