@@ -36,7 +36,9 @@ def get_stock_daily(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
-
+    if df.empty:
+        print("get_stock_daily empty")
+        return None
     df['date'] = pd.to_datetime(df['date'])
     df["year"] = df['date'].map(lambda x: x.year)
     return df
@@ -65,5 +67,5 @@ def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
     return df
 
 if __name__ == '__main__':
-    print(get_stock_per_pbr(1101))
+    print(get_stock_daily(1230))
     pass

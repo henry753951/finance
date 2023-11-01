@@ -18,6 +18,8 @@ def main():
             print("use old data")
         except FileNotFoundError:
             df = utils.get_stock_daily(int(stock.stock_id))
+            if df is None:
+                continue
 
         ## PER PBR 本益比 淨值比
         if 'PER' not in df.columns:
