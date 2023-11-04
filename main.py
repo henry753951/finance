@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def main():
-    stocks = utils.get_all_stock(4000, 7000)
+    stocks = utils.get_all_stock(4906, 7000)
     market_value_df = data.get("etl:market_value")
     print("股票總數:" + str(len(stocks)))
     for stock in stocks:
@@ -23,14 +23,21 @@ def main():
             print("use old data")
         except FileNotFoundError:
             df = utils.get_stock_daily(int(stock.stock_id))
-            if df['date'] is None:
+            try:
+                if df['date'] is None:
+                    continue
+            except:
                 continue
 
         ## PER PBR 本益比 淨值比
         if 'PER' not in df.columns:
             tempDF = utils.get_stock_per_pbr(int(stock.stock_id))
-            tempDF = tempDF[['date', 'PER', 'PBR']]
-            df = pd.merge(df, tempDF, on='date', how='inner')
+            if tempDF is None:
+                df['PER'] = 0
+                df['PBR'] = 0
+            else:
+                tempDF = tempDF[['date', 'PER', 'PBR']]
+                df = pd.merge(df, tempDF, on='date', how='inner')
 
         ## 市值
         if 'equity' not in df.columns or df['equity'].sum() == 0:
@@ -50,12 +57,15 @@ def main():
         ## 股價營收比 (市值 / 年營收) PSR
         if 'mkPrice' in df.columns:
             mouth_revenue = utils.get_mouth_revenue(int(stock.stock_id))
-            mouth_revenue = mouth_revenue.sort_values('date', ascending=False)
-            for index, row in df.iterrows():
-                date = row['date']
-                previous_12_records = mouth_revenue[mouth_revenue['date'] < date].head(12)
-                sum = previous_12_records['revenue'].sum()
-                df.at[index, "PSR"] = row['mkPrice']*10000000 / sum if sum != 0 else 0
+            if mouth_revenue is None:
+                df['PSR'] = 0
+            else:
+                mouth_revenue = mouth_revenue.sort_values('date', ascending=False)
+                for index, row in df.iterrows():
+                    date = row['date']
+                    previous_12_records = mouth_revenue[mouth_revenue['date'] < date].head(12)
+                    sum = previous_12_records['revenue'].sum()
+                    df.at[index, "PSR"] = row['mkPrice']*10000000 / sum if sum != 0 else 0
 
             
         ## ROA ROE

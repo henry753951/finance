@@ -51,8 +51,10 @@ def get_stock_per_pbr(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
-
-    df['date'] = pd.to_datetime(df['date'])
+    try:
+        df['date'] = pd.to_datetime(df['date'])
+    except:
+       return None
     return df
 
 def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
@@ -62,8 +64,10 @@ def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
     )
-
-    df['date'] = pd.to_datetime(df['date'])
+    try:
+        df['date'] = pd.to_datetime(df['date'])
+    except:
+        return None
     return df
 
 if __name__ == '__main__':
