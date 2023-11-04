@@ -5,7 +5,7 @@ from datetime import datetime as dt
 
 
 def main():
-    stocks = utils.get_all_stock(1101, 10000)
+    stocks = utils.get_all_stock(1908, 5000)
     print(len(stocks))
     for stock in stocks:
         print(stock.stock_id)
@@ -18,6 +18,8 @@ def main():
             print("use old data")
         except FileNotFoundError:
             df = utils.get_stock_daily(int(stock.stock_id))
+            if df['date'] is None:
+                continue
 
         ## PER PBR 本益比 淨值比
         if 'PER' not in df.columns:
