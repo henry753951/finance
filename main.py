@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def main():
-    stocks = utils.get_all_stock(4906, 7000)
+    stocks = utils.get_all_stock(5483, 7000)
     market_value_df = data.get("etl:market_value")
     print("股票總數:" + str(len(stocks)))
     for stock in stocks:
