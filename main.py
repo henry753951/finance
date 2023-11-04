@@ -23,6 +23,7 @@ def main():
             print("use old data")
         except FileNotFoundError:
             df = utils.get_stock_daily(int(stock.stock_id))
+
             try:
                 if df['date'] is None:
                     continue
@@ -47,16 +48,21 @@ def main():
                 df["equity"] = df['year'].map(lambda x: equity[str(x)] if str(x) in equity else 0)
                 df['mkPrice'] = df['close'] * df['equity']
             else:
-                market_value_df = market_value_df["date", str(stock.stock_id)]
-                market_value_df = market_value_df.rename(
-                    columns={str(stock.stock_id): "market_value"}
-                )
-                market_value_df["date"] = pd.to_datetime(market_value_df["date"])
-                df = pd.merge(df, market_value_df, on="date", how="inner")
+                try:
+                    market_value_df = market_value_df["date", str(stock.stock_id)]
+                    market_value_df = market_value_df.rename(
+                        columns={str(stock.stock_id): "market_value"}
+                    )
+                    market_value_df["date"] = pd.to_datetime(market_value_df["date"])
+                    df = pd.merge(df, market_value_df, on="date", how="inner")
+                except Exception as e:
+                    df["equity"] = 0
+                    df["mkPrice"] = 0
 
         ## 股價營收比 (市值 / 年營收) PSR
         if 'mkPrice' in df.columns:
             mouth_revenue = utils.get_mouth_revenue(int(stock.stock_id))
+
             if mouth_revenue is None:
                 df['PSR'] = 0
             else:
