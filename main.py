@@ -9,9 +9,6 @@ import pandas as pd
 
 def main():
     stocks = utils.get_all_stock(5483, 7000)
-=======
-    stocks = utils.get_all_stock(1311, 4000)
->>>>>>> a4dd300c121d46fca81d6c48f166f0478d0151f4
     market_value_df = data.get("etl:market_value")
     print("股票總數:" + str(len(stocks)))
     for stock in stocks:
