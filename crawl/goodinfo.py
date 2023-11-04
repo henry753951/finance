@@ -9,11 +9,12 @@ headers = {
 TIMEOUT = 60
 prevCallTime = time.time()
 
-def getHistoryEquityPreYear(stock_id: str) -> dict[str, int]:
-    global prevCallTime
-    while time.time() - prevCallTime < TIMEOUT:
-        time.sleep(0.1)
-    prevCallTime = time.time()
+def getHistoryEquityPreYear(stock_id: str,debug = False) -> dict[str, int]:
+    if not debug:
+        global prevCallTime
+        while time.time() - prevCallTime < TIMEOUT:
+            time.sleep(0.1)
+        prevCallTime = time.time()
 
     try:
         refer = {
@@ -37,3 +38,6 @@ def getHistoryEquityPreYear(stock_id: str) -> dict[str, int]:
     except Exception as e:
         print("被擋了QQ")
         return None
+    
+if __name__ == '__main__':
+    print(getHistoryEquityPreYear("1732"),debug=True)
