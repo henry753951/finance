@@ -29,17 +29,15 @@ def getHistoryEquityPreYear(stock_id: str,debug = False) -> dict[str, int]:
         for row in rows:
             try:
                 cols = row.find_all("td")
-                print(cols[0])
                 year = cols[0].text if 'Q' not in cols[0].text else "20" + cols[0].text.split("Q")[0]
-                equity = int(str(cols[1].text.replace(",","")))
+                equity = float(str(cols[1].text.replace(",","")))
             except Exception as e:
                 continue
             data[year] = equity
-        print(data)
         return data
     except Exception as e:
-        print(e)
+        print("被擋了QQ")
         return None
     
 if __name__ == '__main__':
-    print(getHistoryEquityPreYear("1732"),debug=True)
+    print(getHistoryEquityPreYear("1732",debug=True))
