@@ -6,7 +6,7 @@ import time
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.150 Safari/537.36"
 }
-TIMEOUT = 0
+TIMEOUT = 40
 prevCallTime = time.time()
 
 def getHistoryEquityPreYear(stock_id: str,debug = False) -> dict[str, int]:

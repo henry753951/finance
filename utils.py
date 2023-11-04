@@ -67,5 +67,5 @@ def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
     return df
 
 if __name__ == '__main__':
-    print(get_stock_daily(1230))
+    print(get_mouth_revenue("2330"))
     pass
