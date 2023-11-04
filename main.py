@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def main():
-    stocks = utils.get_all_stock(1101, 5000)
+    stocks = utils.get_all_stock(4000, 7000)
     market_value_df = data.get("etl:market_value")
     print("股票總數:" + str(len(stocks)))
     for stock in stocks:
@@ -60,9 +60,14 @@ def main():
             
         ## ROA ROE
         if 'ROA' not in df.columns and 'ROE' not in df.columns:
-            ROAEdf = pd.read_csv(f'data/roa_roe/single_company_history/company_{stock.stock_id}.csv',usecols=['年份','ROA','ROE'])
-            ROAEdf = ROAEdf.rename(columns={'年份': 'year'})
-            df = pd.merge(df, ROAEdf, on='year', how='inner')
+            try:
+                ROAEdf = pd.read_csv(f'data/roa_roe/single_company_history/company_{stock.stock_id}.csv',usecols=['年份','ROA','ROE'])
+                ROAEdf = ROAEdf.rename(columns={'年份': 'year'})
+                df = pd.merge(df, ROAEdf, on='year', how='inner')
+            except Exception as e:
+                df['ROA'] = 0
+                df['ROE'] = 0
+                print("no ROA ROE data")
 
         df.to_csv(f'data/stocks/{stock.stock_id}.csv', index=False)
 
