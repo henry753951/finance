@@ -31,7 +31,7 @@ def get_all_stock(start_id: int, end_id: int) -> list[Stock_info]:
 
 def get_stock_daily(stock_id: int) -> pd.DataFrame:
     api = DataLoader()
-    # api.login(user_id="",password='password')
+    #api.login(user_id="sam0714",password='')
     df = api.taiwan_stock_daily(
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
@@ -46,7 +46,7 @@ def get_stock_daily(stock_id: int) -> pd.DataFrame:
 
 def get_stock_per_pbr(stock_id: int) -> pd.DataFrame:
     api = DataLoader()
-    # api.login(user_id='user_id',password='password')
+    #api.login(user_id="sam0714",password='')
     df = api.taiwan_stock_per_pbr(
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
@@ -59,7 +59,7 @@ def get_stock_per_pbr(stock_id: int) -> pd.DataFrame:
 
 def get_mouth_revenue(stock_id: int) -> pd.DataFrame:
     api = DataLoader()
-    # api.login(user_id='user_id',password='password')
+    #api.login(user_id="sam0714",password='')
     df = api.taiwan_stock_month_revenue(
         stock_id=F'{stock_id}',
         start_date='2000-01-01',
