@@ -12,7 +12,7 @@ def show_moving_average(input: str, ispath: bool = False):
     close = []
     dates = []
     with open(
-        F"{path}/{id}.csv" if not ispath else input, newline="", encoding="utf-8"
+        (F"{path}/{input}.csv") if not ispath else input, newline="", encoding="utf-8"
     ) as csvfile:  # 讀檔
         rows = csv.reader(csvfile)  # 讀取csv檔案
         next(rows, None)  # 跳過第一行
