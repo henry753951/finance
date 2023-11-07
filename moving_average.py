@@ -8,12 +8,11 @@ from datetime import datetime
 path = "data/stocks"
 
 
-def show_moving_average(input: str, ispath: bool = False):
+def show_moving_average(text: str, ispath: bool = False):
     close = []
     dates = []
-    with open(
-        (F"{path}/{input}.csv") if not ispath else input, newline="", encoding="utf-8"
-    ) as csvfile:  # 讀檔
+    file = F"{path}/{text}.csv" if not ispath else text
+    with open(file, newline="", encoding="utf-8") as csvfile:  # 讀檔
         rows = csv.reader(csvfile)  # 讀取csv檔案
         next(rows, None)  # 跳過第一行
         for row in rows:
