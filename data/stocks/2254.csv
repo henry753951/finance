@@ -1,1 +1,1 @@
-date,stock_id,Trading_Volume,Trading_money,open,max,min,close,spread,Trading_turnover,year,PER,PBR,equity,mkPrice,PSR,ROE,ROA
+date,stock_id,Trading_Volume,Trading_money,open,max,min,close,spread,Trading_turnover,year,PER,PBR,equity,mkPrice,PSR,ROE,ROA,DailyReturn
