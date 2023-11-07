@@ -8,20 +8,19 @@ from datetime import datetime
 path = "data/stocks"
 
 
-stocks = glob.glob(os.path.join(path, "*.csv"))  # 使用 glob 模組找出所有的 csv 檔案
-for stock in stocks:
+def show_moving_average(input: str, ispath: bool = False):
     close = []
     dates = []
-    with open(stock, newline="", encoding="utf-8") as csvfile:  # 讀檔
+    with open(
+        F"{path}/{id}.csv" if not ispath else input, newline="", encoding="utf-8"
+    ) as csvfile:  # 讀檔
         rows = csv.reader(csvfile)  # 讀取csv檔案
         next(rows, None)  # 跳過第一行
         for row in rows:
             if row[7] != "0.0":  # 取出收盤價 去除0.0
                 try:
                     close.append(float(row[7]))  # 將字串轉成浮點數
-                    dates.append(
-                        datetime.strptime(row[0], "%Y-%m-%d")
-                    ) 
+                    dates.append(datetime.strptime(row[0], "%Y-%m-%d"))
                 except ValueError:
                     pass  # 如果轉換失敗，忽略該行
     close = close[1:]  # 去除第一行的欄位名稱
@@ -36,7 +35,7 @@ for stock in stocks:
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
 
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y"))# 設定x軸主要標籤的格式
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y"))  # 設定x軸主要標籤的格式
     plt.plot(dates, close, label="close")
     plt.plot(dates[200:], moving_average, label="moving average")
     plt.xlabel("year")
@@ -44,8 +43,10 @@ for stock in stocks:
     plt.title("Moving Average")
     plt.legend()  # 顯示圖例
     plt.gcf().autofmt_xdate()  # 自動調整 x 軸日期標籤，以避免重疊
-    
-    if not os.path.exists("data/moving_average"):
-        os.mkdir("data/moving_average")
-    plt.savefig(f"data/moving_average/{stock[12:16]}.jpg")  # 儲存圖表
-    plt.close()  # 關閉圖表
+    plt.show()
+
+
+if __name__ == '__main__':
+    stocks = glob.glob(os.path.join(path, "*.csv"))  # 使用 glob 模組找出所有的 csv 檔案
+    for stock in stocks:
+        show_moving_average(stock, True)
