@@ -81,8 +81,13 @@ class DataLoader:
 
     def get_stocksID_ByName(self, stock_name: str) -> str:
         if stock_name not in self.__stocksNameID:
-            raise Exception("股票名稱不存在!")
+            raise Exception(f"股票名稱不存在! {stock_name}")
         return self.__stocksNameID[stock_name]
+
+    def get_stock_Years_byID(self, stock_id: str) -> list:
+        if stock_id not in self.__stocks_df:
+            raise Exception("股票代號不存在!")
+        return self.__stocks_df[stock_id].index.year.unique().tolist()
 
 
 if __name__ == "__main__":
