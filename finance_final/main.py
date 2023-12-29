@@ -64,15 +64,16 @@ for year in years[1:]:
 
     dfreg.fillna(value=-99999, inplace=True)  # Drop missing value
     X = dfreg.loc[:, ["close", "HL_PCT", "PCT_change"]]  # 預測變量
-
+    print(X)
     # 以為目標變量
     Y = np.where(df["close"].shift(-1) > df["close"], 1, -1)
-    # cv.fit(X, Y)
-    # print(cv.best_params_["n_neighbors"])
-    knn = KNeighborsClassifier(n_neighbors=int(2))
+    cv.fit(X, Y)
+    # print("k=", cv.best_params_["n_neighbors"])
+    knn = KNeighborsClassifier(n_neighbors=cv.best_params_["n_neighbors"])
 
     # 訓練模型
     X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
+    print(X_train)
     knn.fit(X_train, Y_train)
 
     # 預測

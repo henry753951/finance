@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 # Machine learning libraries
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
+from itertools import permutations
 
 n_neighbors = list(range(1, 11, 1))  # 設定K值範圍
 cv = GridSearchCV(
@@ -35,72 +36,117 @@ class SplitData:
         self.year = year
 
     def split_data(self):
-        X_train = self.X[self.X.index < str(self.year)]
-        X_test = self.X[self.X.index >= str(self.year)]
-        Y_train = self.Y[self.X.index < str(self.year)]
-        Y_test = self.Y[self.X.index >= str(self.year)]
+        X_train = self.X[self.X.index < self.year]
+        X_test = self.X[self.X.index >= self.year]
+        Y_train = self.Y[: len(X_train)]
+        Y_test = self.Y[len(X_train) :]
         return X_train, X_test, Y_train, Y_test
 
 
-data = pd.read_csv("../data/top200_training.csv")
+best_accuracy = -1
+best_col = []
+
+all = pd.read_csv("../data/top200_training.csv")
 # 去除空白
-for col in data.columns:
-    data[col] = data[col].astype(str)
-    data[col] = data[col].str.strip()
+for col in all.columns:
+    all[col] = all[col].astype(str)
+    all[col] = all[col].str.strip()
 
-stock_id = "2330"
+
 accuracy_list = []
+col_name = [
+    col
+    for col in all.columns
+    if col
+    not in [
+        "證券代碼",
+        "年月",
+        "簡稱",
+    ]
+]  # 取出所有欄位名稱
+# 排列組合col_name
+col_name = list(permutations(col_name, 6))
 
-for year in range(1998, 2010):
-    print(year)
-    df = data[data["證券代碼"].str.contains(stock_id)]
-    df = df.dropna()
+stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 
-    df["年月"] = df["年月"].astype(str)
-    # df = df[df["年月"].str.contains(str(year))]
+for col in col_name:
+    temp_accuracy = []
+    for year in range(1997, 2010):
+        try:
+            X = pd.DataFrame()
+            Y = np.array([])
+            print(year)
+            for stock in stocks:
+                df = all[all["證券代碼"] == stock]
+                # 只保留df["年月"]的年份
+                df.loc[:, "年月"] = df["年月"].astype(str).str.strip().str[:4].astype(int)
+                df.set_index("年月", inplace=True)
+                df.sort_index(inplace=True)
 
-    # 只取年份
-    df["year"] = df["年月"].str[:4]
-    print(df)
-    dfreg = df.loc[:, ["year", "收盤價(元)_年", "本益比", "股價淨值比"]]
-    dfreg.fillna(value=-99999, inplace=True)  # 填補缺失值
+                dfreg = df.loc[:, list(col)]
+                dfreg.dropna(inplace=True)
+                X = pd.concat([X, dfreg])  # 連接資料
+                Y_values = df["ReturnMean_year_Label"].shift(-1)
+                Y_values.dropna(inplace=True)
+                X = X[:-1]
+                Y = np.concatenate([Y, Y_values.values])
 
-    X = dfreg.loc[:, ["收盤價(元)_年", "本益比", "股價淨值比"]]
-    X = X.set_index(df["year"])
-    print(X)
-    Y = np.where(df["收盤價(元)_年"].shift(-1) > df["收盤價(元)_年"], 1, -1)
-    print(Y)
+            cv.fit(X, Y)
+            print(cv.best_params_["n_neighbors"])
 
-    # cv.fit(X, Y)
-    # print(cv.best_params_["n_neighbors"])
+            knn = KNeighborsClassifier(n_neighbors=cv.best_params_["n_neighbors"])
+            X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
+            if X_train.empty or len(X_train) < cv.best_params_["n_neighbors"]:
+                continue
+            # 訓練模型
+            knn.fit(X_train, Y_train)
+            # 預測
+            pred = knn.predict(X_test)
+            accuracy = accuracy_score(Y_test, pred)
+            temp_accuracy.append(accuracy)
+        except:
+            continue
 
-    knn = KNeighborsClassifier(n_neighbors=int(2))
-    X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
-    # 訓練模型
-    knn.fit(X_train, Y_train)
-    # 預測
-    pred = knn.predict(X_test)
-    accuracy = accuracy_score(Y_test, pred)
-    print("Accuracy:", accuracy)
-    accuracy_list.append(accuracy)
+        # # 交易信號
+        # trade = pd.DataFrame()
+        # trade["Predict_Signal"] = knn.predict(X)
+        # # AAPL Cumulative Returns
+        # trade["收盤價(元)_年"] = trade["收盤價(元)_年"].astype(float)
+        # trade["SPY_data_returns"] = np.log(
+        #     df["收盤價(元)_年"] / trade["收盤價(元)_年"].shift(1)
+        # )  # 計算收益率
+        # Cumulative_SPY_data_returns = trade[["SPY_data_returns"]].cumsum() * 100  # 計算累積收益率
 
-    # 交易信號
-    df["Predict_Signal"] = knn.predict(X)
-    # AAPL Cumulative Returns
-    df["收盤價(元)_年"] = df["收盤價(元)_年"].astype(float)
-    df["SPY_data_returns"] = np.log(df["收盤價(元)_年"] / df["收盤價(元)_年"].shift(1))  # 計算收益率
-    Cumulative_SPY_data_returns = df[["SPY_data_returns"]].cumsum() * 100  # 計算累積收益率
+        # trade["Startegy_returns"] = trade["SPY_data_returns"] * trade[
+        #     "Predict_Signal"
+        # ].shift(
+        #     1
+        # )  # 計算策略收益率
+        # Cumulative_Strategy_returns = (
+        #     trade[["Startegy_returns"]].cumsum() * 100
+        # )  # 計算累積策略收益率
 
-    df["Startegy_returns"] = df["SPY_data_returns"] * df["Predict_Signal"].shift(
-        1
-    )  # 計算策略收益率
-    Cumulative_Strategy_returns = df[["Startegy_returns"]].cumsum() * 100  # 計算累積策略收益率
+        # Plot the results to visualize the performance
+        # plt.figure(figsize=(10, 5))
+        # plt.plot(Cumulative_SPY_data_returns, color="r", label="SPY Returns")
+        # plt.plot(Cumulative_Strategy_returns, color="g", label="Strategy Returns")
+        # plt.legend()
+        # plt.show()
 
-    # Plot the results to visualize the performance
-    get_ipython().run_line_magic("matplotlib", "inline")
-    Cumulative_SPY_data_returns.plot()
-    Cumulative_Strategy_returns.plot()
-    plt.legend()
-    plt.show()
+    accuracy_list.append(temp_accuracy[-1])  # 取最後一年的準確率
 
-print(accuracy_list)
+    if temp_accuracy[-1] > best_accuracy:
+        best_accuracy = temp_accuracy[-1]
+        best_col = col
+
+
+result = [
+    {"cols": col_name[i], "accuracy": accuracy_list[i]}
+    for i in range(len(accuracy_list))
+]
+
+# write to json
+import json
+
+with open("result.json", "w") as outfile:
+    json.dump(result, outfile)
