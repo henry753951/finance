@@ -4,13 +4,6 @@ from DataLoader import DataLoader
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Lasso
-
-from DataLoader import DataLoader
-
-# Data Manipulation
-import numpy as np
-import pandas as pd
-from sklearn.linear_model import Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV as rcv
 from sklearn.pipeline import Pipeline
@@ -29,6 +22,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from itertools import permutations
 import json
+from tpot import TPOTClassifier
 
 n_neighbors = list(range(1, 11, 1))  # 設定K值範圍
 cv = GridSearchCV(
@@ -70,11 +64,51 @@ col_name = [
         "證券代碼",
         "年月",
         "簡稱",
+        "ReturnMean_year_Label",
     ]
 ]  # 取出所有欄位名稱
 # 排列組合col_name
-col_name = list(permutations(col_name, 4))
+col_name = list(permutations(col_name, 6))
 
+
+# 导入数据
+# A = all[col_name]
+# B = all["ReturnMean_year_Label"].astype(int)
+
+# 配置TPOT pipeline
+# tpot = TPOTClassifier(
+#     generations=10,  # 迭代次數
+#     population_size=20,  # 族群大小
+#     offspring_size=10,  # 子代大小
+#     mutation_rate=0.1,  # 突變率
+#     crossover_rate=0.5,  # 交配率
+#     scoring="accuracy",  # 評估指標
+#     cv=5,  # 交叉驗證
+#     verbosity=2,  # 日誌冗長度(0~4)
+#     random_state=np.random.randint(1000),  # 隨機種子
+# )
+
+# 开始搜索
+# tpot.fit(A, B)
+
+# estimator = tpot.fitted_pipeline_.steps[-1][1]
+# print(estimator)
+# selected_features = []
+# for i in range(len(estimator.feature_importances_)):
+#     if estimator.feature_importances_[i] > 0:
+#         selected_features.append(col_name[i])
+
+# print(selected_features)
+
+# # 展示最佳模型的分数
+# print(estimator.score(A, B))
+
+# # 取得最佳屬性
+# best_attributes = []
+# for i in range(len(estimator.feature_importances_)):
+#     if estimator.feature_importances_[i] > 0:
+#         best_attributes.append(col_name[i])
+# print(best_attributes)
 
 stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 
@@ -92,14 +126,13 @@ for col in col_name:
                 df.set_index("年月", inplace=True)
                 df.sort_index(inplace=True)
 
-                dfreg = df.loc[:, list(col)]
+                dfreg = df.loc[:, list(col_name)]
                 dfreg.dropna(inplace=True)
                 X = pd.concat([X, dfreg])  # 連接資料
                 Y_values = df["ReturnMean_year_Label"].shift(-1)
                 Y_values.dropna(inplace=True)
                 X = X[:-1]
                 Y = np.concatenate([Y, Y_values.values])
-
             cv.fit(X, Y)
             print(cv.best_params_["n_neighbors"])
 
@@ -112,6 +145,7 @@ for col in col_name:
             # 預測
             pred = knn.predict(X_test)
             accuracy = accuracy_score(Y_test, pred)
+            print(accuracy)
             temp_accuracy.append(accuracy)
         except Exception as e:
             if e == KeyboardInterrupt:
