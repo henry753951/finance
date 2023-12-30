@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from itertools import permutations
+import json
 
 n_neighbors = list(range(1, 11, 1))  # 設定K值範圍
 cv = GridSearchCV(
@@ -67,6 +68,7 @@ col_name = [
 # 排列組合col_name
 col_name = list(permutations(col_name, 6))
 
+
 stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 
 for col in col_name:
@@ -104,7 +106,9 @@ for col in col_name:
             pred = knn.predict(X_test)
             accuracy = accuracy_score(Y_test, pred)
             temp_accuracy.append(accuracy)
-        except:
+        except Exception as e:
+            if e == KeyboardInterrupt:
+                raise
             continue
 
         # # 交易信號
@@ -139,14 +143,13 @@ for col in col_name:
         best_accuracy = temp_accuracy[-1]
         best_col = col
 
+    result = [
+        {"cols": col_name[i], "accuracy": accuracy_list[i]}
+        for i in range(len(accuracy_list))
+    ]
 
-result = [
-    {"cols": col_name[i], "accuracy": accuracy_list[i]}
-    for i in range(len(accuracy_list))
-]
+    # write to json
 
-# write to json
-import json
-
-with open("result.json", "w") as outfile:
-    json.dump(result, outfile)
+    with open("result.json", "w", encoding="utf8") as outfile:
+        json.dump(result, outfile, ensure_ascii=False, indent=4)
+print(best_accuracy, best_col)
