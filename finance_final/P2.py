@@ -17,6 +17,7 @@ from sklearn.model_selection import GridSearchCV
 
 # Plotting graphs
 import matplotlib.pyplot as plt
+import json
 
 # Machine learning libraries
 from sklearn.neighbors import KNeighborsClassifier
@@ -107,7 +108,9 @@ for col in col_name:
             accuracy = accuracy_score(y_test, y_pred)
             print("Accuracy:", accuracy)
             temp_accuracy.append(accuracy)
-        except:
+        except Exception as e:
+            if e == KeyboardInterrupt:
+                raise
             continue
 
     accuracy_list.append(temp_accuracy[-1])  # 取最後一年的準確率
@@ -116,19 +119,15 @@ for col in col_name:
         best_accuracy = temp_accuracy[-1]
         best_col = col
 
-print(accuracy_list)
-result = [
-    {"cols": col_name[i], "accuracy": accuracy_list[i]}
-    for i in range(len(accuracy_list))
-]
+    print(accuracy_list)
+    result = [
+        {"cols": col_name[i], "accuracy": accuracy_list[i]}
+        for i in range(len(accuracy_list))
+    ]
 
-# write to json
-import json
+    # write to json
 
-# 將 result 轉換成 json 字符串
-result_json = json.dumps(result, indent=4)
+    with open("P2result.json", "w", encoding="utf8") as outfile:
+        json.dump(result, outfile, ensure_ascii=False, indent=4)
+print(best_accuracy, best_col)
 
-with open("result.json", "w") as f:
-    f.write(result_json)
-
-f.close()
