@@ -4,6 +4,13 @@ from DataLoader import DataLoader
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Lasso
+
+from DataLoader import DataLoader
+
+# Data Manipulation
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV as rcv
 from sklearn.pipeline import Pipeline
@@ -20,9 +27,8 @@ import matplotlib.pyplot as plt
 # Machine learning libraries
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from itertools import permutations
+from itertools import combinations, permutations
 import json
-from tpot import TPOTClassifier
 
 n_neighbors = list(range(1, 11, 1))  # 設定K值範圍
 cv = GridSearchCV(
@@ -64,85 +70,53 @@ col_name = [
         "證券代碼",
         "年月",
         "簡稱",
-        "ReturnMean_year_Label",
     ]
 ]  # 取出所有欄位名稱
-
-
-# 导入数据
-A = all[col_name]
-B = all["ReturnMean_year_Label"].astype(int)
-
-# 配置TPOT pipeline
-tpot = TPOTClassifier(
-    generations=10,  # 迭代次數
-    population_size=20,  # 族群大小
-    offspring_size=10,  # 子代大小
-    mutation_rate=0.1,  # 突變率
-    crossover_rate=0.5,  # 交配率
-    scoring="accuracy",  # 評估指標
-    cv=5,  # 交叉驗證
-    verbosity=2,  # 日誌冗長度(0~4)
-    random_state=np.random.randint(1000),  # 隨機種子
-)
-
-# 开始搜索
-tpot.fit(A, B)
-
-estimator = tpot.fitted_pipeline_.steps[-1][1]
-print(estimator)
-selected_features = []
-for i in range(len(estimator.feature_importances_)):
-    if estimator.feature_importances_[i] > 0:
-        selected_features.append(col_name[i])
-
-print(selected_features)
-
-# 展示最佳模型的分数
-print(estimator.score(A, B))
+# 排列組合col_name
+col_name = list(combinations(col_name, 4))
 
 
 stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 
-col = selected_features
-temp_accuracy = []
-for year in range(1997, 2010):
-    try:
-        X = pd.DataFrame()
-        Y = np.array([])
-        print(year)
-        for stock in stocks:
-            df = all[all["證券代碼"] == stock]
-            # 只保留df["年月"]的年份
-            df.loc[:, "年月"] = df["年月"].astype(str).str.strip().str[:4].astype(int)
-            df.set_index("年月", inplace=True)
-            df.sort_index(inplace=True)
+for col in col_name:
+    temp_accuracy = []
+    for year in range(1997, 2010):
+        try:
+            X = pd.DataFrame()
+            Y = np.array([])
+            print(year)
+            for stock in stocks:
+                df = all[all["證券代碼"] == stock]
+                # 只保留df["年月"]的年份
+                df.loc[:, "年月"] = df["年月"].astype(str).str.strip().str[:4].astype(int)
+                df.set_index("年月", inplace=True)
+                df.sort_index(inplace=True)
 
-            dfreg = df.loc[:, list(col_name)]
-            dfreg.dropna(inplace=True)
-            X = pd.concat([X, dfreg])  # 連接資料
-            Y_values = df["ReturnMean_year_Label"].shift(-1)
-            Y_values.dropna(inplace=True)
-            X = X[:-1]
-            Y = np.concatenate([Y, Y_values.values])
-        cv.fit(X, Y)
-        print(cv.best_params_["n_neighbors"])
+                dfreg = df.loc[:, list(col)]
+                dfreg.dropna(inplace=True)
+                X = pd.concat([X, dfreg])  # 連接資料
+                Y_values = df["ReturnMean_year_Label"].shift(-1)
+                Y_values.dropna(inplace=True)
+                X = X[:-1]
+                Y = np.concatenate([Y, Y_values.values])
 
-        knn = KNeighborsClassifier(n_neighbors=cv.best_params_["n_neighbors"])
-        X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
-        if X_train.empty or len(X_train) < cv.best_params_["n_neighbors"]:
+            cv.fit(X, Y)
+            print(cv.best_params_["n_neighbors"])
+
+            knn = KNeighborsClassifier(n_neighbors=cv.best_params_["n_neighbors"])
+            X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
+            if X_train.empty or len(X_train) < cv.best_params_["n_neighbors"]:
+                continue
+            # 訓練模型
+            knn.fit(X_train, Y_train)
+            # 預測
+            pred = knn.predict(X_test)
+            accuracy = accuracy_score(Y_test, pred)
+            temp_accuracy.append(accuracy)
+        except Exception as e:
+            if e == KeyboardInterrupt:
+                raise
             continue
-        # 訓練模型
-        knn.fit(X_train, Y_train)
-        # 預測
-        pred = knn.predict(X_test)
-        accuracy = accuracy_score(Y_test, pred)
-        print(accuracy)
-        temp_accuracy.append(accuracy)
-    except Exception as e:
-        if e == KeyboardInterrupt:
-            raise
-        continue
 
         # # 交易信號
         # trade = pd.DataFrame()
@@ -172,17 +146,17 @@ for year in range(1997, 2010):
 
     accuracy_list.append(temp_accuracy[-1])  # 取最後一年的準確率
     print(temp_accuracy[-1])
-    # if temp_accuracy[-1] > best_accuracy:
-    #     best_accuracy = temp_accuracy[-1]
-    #     best_col = col
+    if temp_accuracy[-1] > best_accuracy:
+        best_accuracy = temp_accuracy[-1]
+        best_col = col
 
-    # result = [
-    #     {"cols": col_name[i], "accuracy": accuracy_list[i]}
-    #     for i in range(len(accuracy_list))
-    # ]
+    result = [
+        {"cols": col_name[i], "accuracy": accuracy_list[i]}
+        for i in range(len(accuracy_list))
+    ]
 
-#     # write to json
+    # write to json
 
-#     with open("result.json", "w", encoding="utf8") as outfile:
-#         json.dump(result, outfile, ensure_ascii=False, indent=4)
-# print(best_accuracy, best_col)
+    with open("P1result.json", "w", encoding="utf8") as outfile:
+        json.dump(result, outfile, ensure_ascii=False, indent=4)
+print(best_accuracy, best_col)

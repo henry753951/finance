@@ -105,6 +105,10 @@ for col in col_name:
 
             knn = KNeighborsClassifier(n_neighbors=cv.best_params_["n_neighbors"])
             X_train, X_test, Y_train, Y_test = SplitData(X, Y, year).split_data()
+            print(len(X_train))
+            print(len(X_test))
+            print(len(Y_train))
+            print(len(Y_test))
             if X_train.empty or len(X_train) < cv.best_params_["n_neighbors"]:
                 continue
             # 訓練模型
