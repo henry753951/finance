@@ -67,7 +67,7 @@ col_name = [
     ]
 ]  # 取出所有欄位名稱
 # 排列組合col_name
-col_name = list(permutations(col_name, 6))
+col_name = list(permutations(col_name, 4))
 
 stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 
