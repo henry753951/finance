@@ -92,12 +92,17 @@ class DataLoader:
     def getAllStocksPreYear(
         self, cols: list[str], cols_deal: list[callable], cache: bool = True
     ) -> pd.DataFrame:
-        if cache:
-            _id = hashlib.md5(str(cols).encode("utf-8")).hexdigest()
-            if os.path.exists(f"../data/stocks_pre_year-{_id}.pkl"):
-                with open(f"../data/stocks_pre_year-{_id}.pkl", "rb") as f:
-                    return pickle.load(f)
-        else:
+        try:
+            if cache:
+                _id = hashlib.md5(str(cols).encode("utf-8")).hexdigest()
+                if os.path.exists(f"../data/stocks_pre_year-{_id}.pkl"):
+                    with open(f"../data/stocks_pre_year-{_id}.pkl", "rb") as f:
+                        return pickle.load(f)
+                else:
+                    raise Exception("沒有快取檔案")
+            else:
+                raise
+        except Exception as e:
             out = pd.DataFrame()
             for stock_id in self.__stocks_df:
                 for year in self.get_stock_Years_byID(stock_id):
@@ -113,7 +118,7 @@ class DataLoader:
                             if col not in tmp.columns:
                                 raise Exception(f"股票代號: {stock_id} 沒有 {col} 欄位")
                             if col_deal is not None:
-                                temp_row[col] = col_deal(tmp[col])
+                                temp_row[col] = col_deal(tmp)
                             else:
                                 temp_row[col] = tmp[col].iloc[-1]  # 最後一筆
                     except Exception as e:
