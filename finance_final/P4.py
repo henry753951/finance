@@ -125,7 +125,7 @@ for year in range(1998, 2009):
     output += utils.strategy(Y_pred, X_test_UNnormalized, all_indexed)
     print(output)
     print(f"Count_1: {list(Y_pred).count(1)} Count_-1: {list(Y_pred).count(-1)}")
-    
+
     YearReturnList = []
     # out csv
     if len(output) != 0:
@@ -144,15 +144,15 @@ for year in range(1998, 2009):
             YearReturnList.append(YearReturn)
 
     # 計算年報酬率
-    output_df.to_csv(f"../data/strategy/1/SplitBy{year}.csv", index=False)
-    if "data.json" not in os.listdir("../data/strategy/1/"):
-        with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+    output_df.to_csv(f"../data/strategy/4/SplitBy{year}.csv", index=False)
+    if "data.json" not in os.listdir("../data/strategy/4/"):
+        with open(f"../data/strategy/4/data.json", "w", encoding="utf-8") as outfile:
             json.dump(
                 {},
                 outfile,
                 ensure_ascii=False,
             )
-    with open(f"../data/strategy/1/data.json", "r", encoding="utf-8") as outfile:
+    with open(f"../data/strategy/4/data.json", "r", encoding="utf-8") as outfile:
         data = json.load(outfile)
         data[f"SplitBy{year}"] = {
             "accuracy": accuracy,
@@ -161,7 +161,7 @@ for year in range(1998, 2009):
             "特徵重要程度": sorted(list(rf.feature_importances_.argsort()[-10:][::-1].astype(float))),
             "K值": cv.best_params_["n_neighbors"],
         }
-    with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+    with open(f"../data/strategy/4/data.json", "w", encoding="utf-8") as outfile:
         json.dump(
             data,
             outfile,
