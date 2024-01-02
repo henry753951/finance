@@ -3,7 +3,7 @@ import numpy as np
 from typing import Dict
 import os
 import pickle
-import datetime
+import hashlib
 
 
 class DataLoader:
@@ -89,8 +89,48 @@ class DataLoader:
             raise Exception("股票代號不存在!")
         return self.__stocks_df[stock_id].index.year.unique().tolist()
 
+    def getAllStocksPreYear(
+        self, cols: list[str], cols_deal: list[callable], cache: bool = True
+    ) -> pd.DataFrame:
+        if cache:
+            _id = hashlib.md5(str(cols).encode("utf-8")).hexdigest()
+            if os.path.exists(f"../data/stocks_pre_year-{_id}.pkl"):
+                with open(f"../data/stocks_pre_year-{_id}.pkl", "rb") as f:
+                    return pickle.load(f)
+        else:
+            out = pd.DataFrame()
+            for stock_id in self.__stocks_df:
+                for year in self.get_stock_Years_byID(stock_id):
+                    temp_row = {
+                        "stock_id": stock_id,
+                        "year": year,
+                    }
+
+                    tmp = self.get_stocks_df(stock_id=stock_id, year=year)
+                    print(stock_id, year, tmp.shape)
+                    try:
+                        for col, col_deal in zip(cols, cols_deal):
+                            if col not in tmp.columns:
+                                raise Exception(f"股票代號: {stock_id} 沒有 {col} 欄位")
+                            if col_deal is not None:
+                                temp_row[col] = col_deal(tmp[col])
+                            else:
+                                temp_row[col] = tmp[col].iloc[-1]  # 最後一筆
+                    except Exception as e:
+                        print(e)
+                        continue
+                    out = pd.concat([out, pd.DataFrame([temp_row])], ignore_index=True)
+            if cache:
+                with open(f"../data/stocks_pre_year-{_id}.pkl", "wb") as f:
+                    pickle.dump(out, f)
+        return out
+
 
 if __name__ == "__main__":
     dl = DataLoader()
     dl.load_stocks(cache=True)
-    print(dl.get_stocks_df(stock_id="2330", year=2020))
+    print(
+        dl.getAllStocksPreYear(
+            cols=["equity", "ROE", "ROA"], cols_deal=[None, None, None]
+        )
+    )

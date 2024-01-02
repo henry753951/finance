@@ -40,9 +40,20 @@ class SplitData:
 
 
 all = pd.read_csv("../data/top200_training.csv")
+all_indexed = all.copy()
+all_indexed.loc[:, "年月"] = all_indexed["年月"].astype(str).str.strip().str[:4].astype(int)
+all_indexed.set_index(["證券代碼", "年月"], inplace=True)
 if not os.path.exists(f"../data/strategy/1/"):
     os.makedirs(f"../data/strategy/1/")
 output: list[dict] = []
+
+
+def getStockByYear(year, stock_id) -> dict or bool:
+    try:
+        find: pd.DataFrame = all_indexed.loc[(int(stock_id), year)]
+    except KeyError:
+        return False
+    return find.to_dict()
 
 
 def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
@@ -51,69 +62,23 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
 
     # for loop skip first year
     # last year unknown
-
-    strategyMoney = 1000000
-    stocksIhav = {}
-    currentYear = None
     for index, row in enumerate(X_test_copy.tail(len(Y_pred)).iterrows()):
-        # buy
-        if currentYear != row[0]:  # 換年
-            currentYear = row[0]
-            for stock, data in stocksIhav.items():
-                strategyMoney -= data["count"] * data["price"]
-
         if Y_pred[index] == "1":
-            if (strategyMoney / len(Y_pred)) // float(row[1]["收盤價(元)_年"]) == 0:
+            NextYearStockData = getStockByYear(row[0] + 1, row[1]["證券代碼"])
+            if not NextYearStockData:
                 continue
-            stocksIhav[row[1]["證券代碼"]] = {
-                "count": (strategyMoney / len(Y_pred)) // float(row[1]["收盤價(元)_年"]),
-                "price": float(row[1]["收盤價(元)_年"]),
-            }
+            print(row[0] + 1, row[1]["簡稱"])
             output.append(
                 {
-                    "year": row[0],
+                    "year": row[0] + 1,
                     "stock": row[1]["證券代碼"],
-                    "stockName": row[1]["簡稱"],
-                    "price": row[1]["收盤價(元)_年"],
-                    "count": stocksIhav[row[1]["證券代碼"]]["count"],
-                    "return": 0,
-                    "action": "buy",
+                    "stock_name": row[1]["簡稱"],
+                    "open_price": float(row[1]["收盤價(元)_年"]),
+                    "close_price": float(NextYearStockData["收盤價(元)_年"]),
+                    "return": float(NextYearStockData["收盤價(元)_年"])
+                    / float(row[1]["收盤價(元)_年"]),
                 }
             )
-        elif Y_pred[index] == "-1":
-            # sell
-            if row[1]["證券代碼"] in stocksIhav:
-                strategyMoney += stocksIhav[row[1]["證券代碼"]]["count"] * float(
-                    row[1]["收盤價(元)_年"]
-                )
-                returnRate = (
-                    stocksIhav[row[1]["證券代碼"]]["count"]
-                    * float(row[1]["收盤價(元)_年"])
-                    / (
-                        stocksIhav[row[1]["證券代碼"]]["count"]
-                        * stocksIhav[row[1]["證券代碼"]]["price"]
-                    )
-                )
-                output.append(
-                    {
-                        "year": row[0],
-                        "stock": row[1]["證券代碼"],
-                        "stockName": row[1]["簡稱"],
-                        "price": row[1]["收盤價(元)_年"],
-                        "count": stocksIhav[row[1]["證券代碼"]]["count"],
-                        "return": returnRate,
-                        "action": "sell",
-                    }
-                )
-
-                stocksIhav.pop(row[1]["證券代碼"])
-    for stock, data in stocksIhav.items():
-        strategyMoney += data["count"] * data["price"]  # 最後一年賣掉
-
-    # 計算報酬率以%表示
-    returnRate = (strategyMoney - 1000000) / 1000000 * 100
-    print("returnRate: ", returnRate, "%")
-    return strategyMoney
 
 
 # 去除空白
@@ -164,7 +129,7 @@ for year in range(1998, 2009):
     # 特徵選取
     rf = RandomForestClassifier(n_estimators=10, criterion="entropy", random_state=0)
     rf.fit(X_train.loc[:, col_name], Y_train)
-    # print("特徵重要程度: ", rf.feature_importances_)
+    print("特徵重要程度: ", rf.feature_importances_)
     feature_index = np.array(rf.feature_importances_.argsort()[-10:][::-1])  # 取前10個重要特徵
     feature_index.sort()
     new_feature = [X.loc[:, col_name].columns[i] for i in feature_index]
@@ -191,11 +156,48 @@ for year in range(1998, 2009):
     strategyMoney = strategy(Y_pred, X_test_strategy)
     print("策略: ", strategyMoney)
     print(f"Count_1: {list(Y_pred).count('1')} Count_-1: {list(Y_pred).count('-1')}")
-    # write csv file
-    outDF = pd.DataFrame(output)
-    outDF.to_csv(f"../data/strategy/1/splitBy{year}_strategy.csv", index=False)
-    # append top return stock outDF["action"] == "sell"
-    topReturnStock = outDF[outDF["action"] == "sell"].sort_values(
-        by="return", ascending=False
-    )[:10]
-    topReturnStock.to_csv(f"../data/strategy/1/splitBy{year}_topReturnStock.csv")
+
+    # out csv
+
+    output_df = pd.DataFrame(output)
+    output_df.sort_values(by=["return"], ascending=False, inplace=True)  # 排序
+
+    perStockMoney = 10
+    YearReturnList = []
+    year_list = list(set(output_df["year"].to_list()))
+    for _year in year_list:
+        temp_df = output_df.copy()
+        year_df = temp_df[temp_df["year"] == _year]
+        stock_count = len(year_df)
+        sum_ = year_df["return"].sum()
+        YearReturn = sum_ / stock_count
+        print(f"{_year}年報酬率: {YearReturn}")
+        YearReturnList.append(YearReturn)
+
+    # 計算年報酬率
+    output_df.to_csv(f"../data/strategy/1/SplitBy{year}.csv", index=False)
+    if "data.json" not in os.listdir("../data/strategy/1/"):
+        with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+            json.dump(
+                {},
+                outfile,
+                ensure_ascii=False,
+            )
+    with open(f"../data/strategy/1/data.json", "r", encoding="utf-8") as outfile:
+        data = json.load(outfile)
+        data[f"SplitBy{year}"] = {
+            "accuracy": accuracy,
+            "YearReturnList": YearReturnList,
+            "特徵": new_feature,
+            "特徵重要程度": sorted(
+                list(rf.feature_importances_.argsort()[-10:][::-1].astype(float))
+            ),
+            "K值": cv.best_params_["n_neighbors"],
+        }
+    with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+        json.dump(
+            data,
+            outfile,
+            ensure_ascii=False,
+            indent=4,
+        )
