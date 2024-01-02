@@ -16,6 +16,7 @@ from sklearn.metrics import accuracy_score
 from itertools import permutations
 import json
 from sklearn.ensemble import RandomForestClassifier
+import os
 
 n_neighbors = list(range(1, 11, 1))  # 設定K值範圍
 cv = GridSearchCV(
@@ -39,47 +40,79 @@ class SplitData:
 
 
 all = pd.read_csv("../data/top200_training.csv")
+if not os.path.exists(f"../data/strategy/1/"):
+    os.makedirs(f"../data/strategy/1/")
+output: list[dict] = []
 
 
 def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
+    # X_test_strategy = 2000 - 2005
+    # Y_pred = 2001 - 2006
+
+    # for loop skip first year
+    # last year unknown
+
     strategyMoney = 1000000
     stocksIhav = {}
     currentYear = None
-    buylist = []
-    selllist = []
     for index, row in enumerate(X_test_copy.tail(len(Y_pred)).iterrows()):
+        # buy
         if currentYear != row[0]:  # 換年
-            # buy
             currentYear = row[0]
             for stock, data in stocksIhav.items():
-                strategyMoney += data["count"] * data["price"]
+                strategyMoney -= data["count"] * data["price"]
 
         if Y_pred[index] == "1":
-            buylist.append(row[1]["證券代碼"])
-            # print(f"buy {row[1]['證券代碼']}")
+            if (strategyMoney / len(Y_pred)) // float(row[1]["收盤價(元)_年"]) == 0:
+                continue
             stocksIhav[row[1]["證券代碼"]] = {
                 "count": (strategyMoney / len(Y_pred)) // float(row[1]["收盤價(元)_年"]),
                 "price": float(row[1]["收盤價(元)_年"]),
             }
+            output.append(
+                {
+                    "year": row[0],
+                    "stock": row[1]["證券代碼"],
+                    "stockName": row[1]["簡稱"],
+                    "price": row[1]["收盤價(元)_年"],
+                    "count": stocksIhav[row[1]["證券代碼"]]["count"],
+                    "return": 0,
+                    "action": "buy",
+                }
+            )
         elif Y_pred[index] == "-1":
             # sell
-            selllist.append(row[1]["證券代碼"])
-            # print(f"sell {row[1]['證券代碼']}")
             if row[1]["證券代碼"] in stocksIhav:
-                strategyMoney -= stocksIhav[row[1]["證券代碼"]]["count"] * float(
+                strategyMoney += stocksIhav[row[1]["證券代碼"]]["count"] * float(
                     row[1]["收盤價(元)_年"]
                 )
+                returnRate = (
+                    stocksIhav[row[1]["證券代碼"]]["count"]
+                    * float(row[1]["收盤價(元)_年"])
+                    / (
+                        stocksIhav[row[1]["證券代碼"]]["count"]
+                        * stocksIhav[row[1]["證券代碼"]]["price"]
+                    )
+                )
+                output.append(
+                    {
+                        "year": row[0],
+                        "stock": row[1]["證券代碼"],
+                        "stockName": row[1]["簡稱"],
+                        "price": row[1]["收盤價(元)_年"],
+                        "count": stocksIhav[row[1]["證券代碼"]]["count"],
+                        "return": returnRate,
+                        "action": "sell",
+                    }
+                )
+
                 stocksIhav.pop(row[1]["證券代碼"])
     for stock, data in stocksIhav.items():
         strategyMoney += data["count"] * data["price"]  # 最後一年賣掉
 
     # 計算報酬率以%表示
     returnRate = (strategyMoney - 1000000) / 1000000 * 100
-    print("buylist: ", buylist)
-    print("selllist: ", selllist)
     print("returnRate: ", returnRate, "%")
-    buylist = []
-    selllist = []
     return strategyMoney
 
 
@@ -104,6 +137,7 @@ col_name = [
 stocks = list(set(all["證券代碼"].to_list()))  # 取出所有股票代碼
 predict_df = pd.DataFrame()
 for year in range(1998, 2009):
+    output = []
     print(f"Year = {year}")
     X = pd.DataFrame()
     Y = np.array([])
@@ -157,3 +191,11 @@ for year in range(1998, 2009):
     strategyMoney = strategy(Y_pred, X_test_strategy)
     print("策略: ", strategyMoney)
     print(f"Count_1: {list(Y_pred).count('1')} Count_-1: {list(Y_pred).count('-1')}")
+    # write csv file
+    outDF = pd.DataFrame(output)
+    outDF.to_csv(f"../data/strategy/1/splitBy{year}_strategy.csv", index=False)
+    # append top return stock outDF["action"] == "sell"
+    topReturnStock = outDF[outDF["action"] == "sell"].sort_values(
+        by="return", ascending=False
+    )[:10]
+    topReturnStock.to_csv(f"../data/strategy/1/splitBy{year}_topReturnStock.csv")
