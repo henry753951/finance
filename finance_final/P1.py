@@ -30,8 +30,8 @@ all_indexed = all.copy()
 all_indexed.loc[:, "年月"] = all_indexed["年月"].astype(str).str.strip().str[:4].astype(int)
 all_indexed.loc[:, "證券代碼"] = all_indexed["證券代碼"].astype(str)
 all_indexed.set_index(["證券代碼", "年月"], inplace=True)
-if not os.path.exists(f"../data/strategy/1/"):
-    os.makedirs(f"../data/strategy/1/")
+if not os.path.exists(f"../data/strategy/4/"):
+    os.makedirs(f"../data/strategy/4/")
 output: list[dict] = []
 
 
@@ -128,15 +128,15 @@ for year in range(1998, 2009):
         YearReturnList.append(YearReturn)
 
     # 計算年報酬率
-    output_df.to_csv(f"../data/strategy/1/SplitBy{year}.csv", index=False)
+    output_df.to_csv(f"../data/strategy/4/SplitBy{year}.csv", index=False)
     if "data.json" not in os.listdir("../data/strategy/1/"):
-        with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+        with open(f"../data/strategy/4/data.json", "w", encoding="utf-8") as outfile:
             json.dump(
                 {},
                 outfile,
                 ensure_ascii=False,
             )
-    with open(f"../data/strategy/1/data.json", "r", encoding="utf-8") as outfile:
+    with open(f"../data/strategy/4/data.json", "r", encoding="utf-8") as outfile:
         data = json.load(outfile)
         data[f"SplitBy{year}"] = {
             "accuracy": accuracy,
@@ -145,7 +145,7 @@ for year in range(1998, 2009):
             "特徵重要程度": sorted(list(rf.feature_importances_.argsort()[-10:][::-1].astype(float))),
             "K值": cv.best_params_["n_neighbors"],
         }
-    with open(f"../data/strategy/1/data.json", "w", encoding="utf-8") as outfile:
+    with open(f"../data/strategy/4/data.json", "w", encoding="utf-8") as outfile:
         json.dump(
             data,
             outfile,

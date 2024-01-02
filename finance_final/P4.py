@@ -125,23 +125,23 @@ for year in range(1998, 2009):
     output += utils.strategy(Y_pred, X_test_UNnormalized, all_indexed)
     print(output)
     print(f"Count_1: {list(Y_pred).count(1)} Count_-1: {list(Y_pred).count(-1)}")
-
-    # out csv
-
-    output_df = pd.DataFrame(output)
-    output_df.sort_values(by=["return"], ascending=False, inplace=True)  # 排序
-
-    perStockMoney = 10
+    
     YearReturnList = []
-    year_list = list(set(output_df["year"].to_list()))
-    for _year in year_list:
-        temp_df = output_df.copy()
-        year_df = temp_df[temp_df["year"] == _year]
-        stock_count = len(year_df)
-        sum_ = year_df["return"].sum()
-        YearReturn = sum_ / stock_count
-        print(f"{_year}年報酬率: {YearReturn}")
-        YearReturnList.append(YearReturn)
+    # out csv
+    if len(output) != 0:
+        output_df = pd.DataFrame(output)
+        output_df.sort_values(by=["return"], ascending=False, inplace=True)  # 排序
+
+        perStockMoney = 10
+        year_list = list(set(output_df["year"].to_list()))
+        for _year in year_list:
+            temp_df = output_df.copy()
+            year_df = temp_df[temp_df["year"] == _year]
+            stock_count = len(year_df)
+            sum_ = year_df["return"].sum()
+            YearReturn = sum_ / stock_count
+            print(f"{_year}年報酬率: {YearReturn}")
+            YearReturnList.append(YearReturn)
 
     # 計算年報酬率
     output_df.to_csv(f"../data/strategy/1/SplitBy{year}.csv", index=False)

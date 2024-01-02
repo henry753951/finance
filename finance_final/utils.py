@@ -25,8 +25,19 @@ def calcTurnover(df: pd.DataFrame):
 
 
 def normalization(data):
+    cols = [
+        col
+        for col in data.columns
+        if col
+        not in [
+            "證券代碼",
+            "年月",
+            "簡稱",
+            "ReturnMean_year_Label",
+        ]
+    ]
     data = data.copy()
-    for col in data.columns[2:-2]:
+    for col in cols:
         data[col] = (data[col] - data[col].min()) / (data[col].max() - data[col].min())
 
     return data
