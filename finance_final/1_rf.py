@@ -72,8 +72,12 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
                 stocksIhav.pop(row[1]["證券代碼"])
     for stock, data in stocksIhav.items():
         strategyMoney += data["count"] * data["price"]  # 最後一年賣掉
+
+    # 計算報酬率以%表示
+    returnRate = (strategyMoney - 1000000) / 1000000 * 100
     print("buylist: ", buylist)
     print("selllist: ", selllist)
+    print("returnRate: ", returnRate, "%")
     buylist = []
     selllist = []
     return strategyMoney
