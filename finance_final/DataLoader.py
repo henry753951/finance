@@ -108,7 +108,7 @@ class DataLoader:
                 for year in self.get_stock_Years_byID(stock_id):
                     temp_row = {
                         "stock_id": stock_id,
-                        "year": year,
+                        "year": str(year),
                     }
 
                     tmp = self.get_stocks_df(stock_id=stock_id, year=year)

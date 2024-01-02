@@ -1,3 +1,4 @@
+import warnings
 from sklearn.svm import SVC
 from DataLoader import DataLoader
 import numpy as np
@@ -11,8 +12,9 @@ from sklearn.metrics import accuracy_score
 import json
 from sklearn.ensemble import RandomForestClassifier
 import os
-
 import utils
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 n_neighbors = list(range(1, 11, 1))
 cv = GridSearchCV(estimator=KNeighborsClassifier(), param_grid={"n_neighbors": n_neighbors}, cv=5)
@@ -28,23 +30,30 @@ dl.load_stocks(cache=True)
 df = dl.getAllStocksPreYear(
     cols=["equity", "Trading_turnover"], cols_deal=[None, utils.calcTurnover]
 )
-not_exist = []
 
 accuracy_list = []
-
 all = pd.read_csv("../data/top200_training.csv")
-all_indexed = all.copy()
-all_indexed.loc[:, "年月"] = all_indexed["年月"].astype(str).str.strip().str[:4].astype(int)
-all_indexed.loc[:, "證券代碼"] = all_indexed["證券代碼"].astype(str)
-
-all_indexed.set_index(["證券代碼", "年月"], inplace=True)
+# 去除不要的欄位
 
 # 去除空白
 for col in ["簡稱", "證券代碼", "年月"]:
     all[col] = all[col].astype(str)
     all[col] = all[col].str.strip()
 
-# 去除不要的欄位
+all.loc[:, "年月"] = all["年月"].astype(str).str.strip().str[:4].astype(str)
+all.loc[:, "證券代碼"] = all["證券代碼"].astype(str)
+all_indexed = all.copy()
+all_indexed.set_index(["證券代碼", "年月"], inplace=True)
+
+all = all.dropna(inplace=False)
+all = pd.merge(
+    all,
+    df,
+    left_on=["證券代碼", "年月"],
+    right_on=["stock_id", "year"],
+    how="left",
+)
+all.drop(["stock_id", "year"], axis=1, inplace=True)
 col_name = [
     col
     for col in all.columns
@@ -55,14 +64,9 @@ col_name = [
         "簡稱",
     ]
 ]
-all = pd.merge(
-    all_indexed,
-    df,
-    left_on=["證券代碼", "年月"],
-    right_on=["stock_id", "year"],
-    how="inner",
-)
-stocks = df["stock_id"].unique().tolist()
+all = all.fillna(0)
+
+stocks = all["證券代碼"].unique().tolist()
 for year in range(1998, 2009):
     output = []
     print(f"Year = {year}")
@@ -72,17 +76,20 @@ for year in range(1998, 2009):
     for stock in stocks:
         df = all[all["證券代碼"] == stock]
         # 只保留df["年月"]的年份
-        df.loc[:, "年月"] = df["年月"].astype(str).str.strip().str[:4].astype(int)
+        df.loc[:, "年月"] = df["年月"].astype(int)
         df.set_index("年月", inplace=True)
-        df = df.dropna(inplace=False)
         X = pd.concat([X, df])  # 連接資料
         Y_values = df["ReturnMean_year_Label"].shift(-1)
         Y_values.dropna(inplace=True)
+
         X = X[:-1]
         Y = np.concatenate([Y, Y_values.values])
 
     X = X.sort_index()
 
+    if len(X) != len(Y):
+        raise Exception(F"len(X) != len(Y)\nlen(X): {len(X)}\nlen(Y): {len(Y)}")
+  
     X_train, X_test, Y_train, Y_test = utils.SplitData(utils.normalization(X), Y, year).split_data()
     _, X_test_UNnormalized, _, _ = utils.SplitData(X, Y, year).split_data()
     print("X_test: ", len(X_test), "Y_test: ", len(Y_test))
@@ -92,14 +99,19 @@ for year in range(1998, 2009):
     # 特徵選取
     rf = RandomForestClassifier(n_estimators=10, criterion="entropy", random_state=0)
     rf.fit(X_train.loc[:, col_name], Y_train)
-    print("特徵重要程度: ", rf.feature_importances_)
+    print(
+        "特徵重要程度: ",
+        "\n".join([f"{col_name[i]}: {rf.feature_importances_[i]}" for i in range(len(col_name))]),
+    )
     feature_index = np.array(rf.feature_importances_.argsort()[-10:][::-1])  # 取前10個重要特徵
     feature_index.sort()
     new_feature = [X.loc[:, col_name].columns[i] for i in feature_index]
+    new_feature+=["equity", "Trading_turnover"]
     print("特徵: ", new_feature)
     # print("feature_index", feature_index)
     X_train = X_train.loc[:, col_name].loc[:][new_feature]
     X_test = X_test.loc[:, col_name].loc[:][new_feature]
+
     # 搜尋最佳K值
     cv.fit(X_train, Y_train)
     print("K值: ", cv.best_params_["n_neighbors"])
@@ -113,9 +125,11 @@ for year in range(1998, 2009):
         "gamma": [1, 0.1, 0.001, 0.0001],
         "kernel": ["linear", "rbf"],
     }
-    grid = GridSearchCV(SVC(), param_grid, refit=True, verbose=10)
+    grid = GridSearchCV(SVC(), param_grid, refit=True, verbose=1)
     # 預測
     grid.fit(X_train, Y_train)
+    print(X_train)
+    print(Y_train)
     Y_pred = grid.predict(X_test)
     accuracy = accuracy_score(Y_test, Y_pred)
     print("準確率: ", accuracy)
@@ -125,11 +139,12 @@ for year in range(1998, 2009):
     output += utils.strategy(Y_pred, X_test_UNnormalized, all_indexed)
     print(output)
     print(f"Count_1: {list(Y_pred).count(1)} Count_-1: {list(Y_pred).count(-1)}")
+    print(f"Count_1: {list(Y_test).count(1)} Count_-1: {list(Y_test).count(-1)}")
 
     YearReturnList = []
     # out csv
+    output_df = pd.DataFrame(output)
     if len(output) != 0:
-        output_df = pd.DataFrame(output)
         output_df.sort_values(by=["return"], ascending=False, inplace=True)  # 排序
 
         perStockMoney = 10

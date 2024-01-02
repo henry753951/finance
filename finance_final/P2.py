@@ -58,6 +58,7 @@ col_name = [
         "證券代碼",
         "年月",
         "簡稱",
+        "ReturnMean_year_Label",
     ]
 ]  # 取出所有欄位名稱
 
@@ -82,6 +83,11 @@ for year in range(1998, 2009):
         Y = np.concatenate([Y, Y_values.values])
 
     X = X.sort_index()
+
+    if(len(X) != len(Y)):
+        raise Exception(F"len(X) != len(Y)\nlen(X): {len(X)}\nlen(Y): {len(Y)}")
+        
+
     X_train, X_test, Y_train, Y_test = utils.SplitData(utils.normalization(X), Y, year).split_data()
     _, X_test_UNnormalized, _, _ = utils.SplitData(X, Y, year).split_data()
     print("X_test: ", len(X_test), "Y_test: ", len(Y_test))
@@ -107,7 +113,7 @@ for year in range(1998, 2009):
     dt = DecisionTreeClassifier()
     # 訓練模型
     dt.fit(X_train, Y_train)
-
+    
     # 預測測試集
     Y_pred = dt.predict(X_test)
     accuracy = accuracy_score(Y_test, Y_pred)

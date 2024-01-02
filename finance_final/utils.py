@@ -25,6 +25,7 @@ def calcTurnover(df: pd.DataFrame):
 
 
 def normalization(data):
+    data = data.copy()
     cols = [
         col
         for col in data.columns
@@ -36,10 +37,10 @@ def normalization(data):
             "ReturnMean_year_Label",
         ]
     ]
-    data = data.copy()
-    for col in cols:
-        data[col] = (data[col] - data[col].min()) / (data[col].max() - data[col].min())
-
+    for col in data.columns:
+        if col in cols:
+            data[col] = (data[col] - data[col].min()) / (data[col].max() - data[col].min())
+    data = data.fillna(0)
     return data
 
 
@@ -73,5 +74,4 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame, all_indexed):
                     "return": float(NextYearStockData["收盤價(元)_年"]) / float(row[1]["收盤價(元)_年"]),
                 }
             )
-    print("output: ", output)
     return output
