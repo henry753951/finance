@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 import json
-
-with open(F"../data/strategy/{input('>')}/data.json", "r", encoding="utf-8") as f:
+Part = input('>')
+with open(F"../data/strategy/{Part}/data.json", "r", encoding="utf-8") as f:
     data = json.load(f)
     print(data)
     print(data.keys())
@@ -17,4 +17,5 @@ with open(F"../data/strategy/{input('>')}/data.json", "r", encoding="utf-8") as 
         data["最大報酬率年份"] = (np.argmax(np.array(data[key]["YearReturnList"])) + 1998)
         data["最小報酬率年份"] = (np.argmin(np.array(data[key]["YearReturnList"])) + 1998)
     
-    print(data)
+    pd.DataFrame(data).to_csv(F"../data/strategy/{Part}/data.csv", index=False)
+    

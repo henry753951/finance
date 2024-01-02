@@ -55,7 +55,7 @@ col_name = [
         "簡稱",
     ]
 ]
-df = pd.merge(
+all = pd.merge(
     all_indexed,
     df,
     left_on=["證券代碼", "年月"],
