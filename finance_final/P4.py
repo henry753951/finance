@@ -121,6 +121,7 @@ for year in range(1998, 2009):
     print("準確率: ", accuracy)
     accuracy_list.append(accuracy)
     # 策略
+    print("策略")
     output += utils.strategy(Y_pred, X_test_UNnormalized, all_indexed)
     print(output)
     print(f"Count_1: {list(Y_pred).count(1)} Count_-1: {list(Y_pred).count(-1)}")

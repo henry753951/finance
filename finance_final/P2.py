@@ -37,6 +37,7 @@ cv = GridSearchCV(
 all = pd.read_csv("../data/top200_training.csv")
 all_indexed = all.copy()
 all_indexed.loc[:, "年月"] = all_indexed["年月"].astype(str).str.strip().str[:4].astype(int)
+all_indexed.loc[:, "證券代碼"] = all_indexed["證券代碼"].astype(str)
 all_indexed.set_index(["證券代碼", "年月"], inplace=True)
 if not os.path.exists(f"../data/strategy/2/"):
     os.makedirs(f"../data/strategy/2/")

@@ -34,7 +34,7 @@ def normalization(data):
 
 def getStockByYear(year, stock_id, all_indexed) -> dict or bool:
     try:
-        find: pd.DataFrame = all_indexed.loc[(int(stock_id), year)]
+        find: pd.DataFrame = all_indexed.loc[(stock_id, year)]
     except KeyError:
         return False
     return find.to_dict()
@@ -52,7 +52,6 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame, all_indexed):
             NextYearStockData = getStockByYear(row[0] + 1, row[1]["證券代碼"], all_indexed)
             if not NextYearStockData:
                 continue
-            print(row[0] + 1, row[1]["簡稱"])
             output.append(
                 {
                     "year": row[0] + 1,
@@ -63,4 +62,5 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame, all_indexed):
                     "return": float(NextYearStockData["收盤價(元)_年"]) / float(row[1]["收盤價(元)_年"]),
                 }
             )
+    print("output: ", output)
     return output
