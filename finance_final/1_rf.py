@@ -45,6 +45,8 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
     strategyMoney = 1000000
     stocksIhav = {}
     currentYear = None
+    buylist = []
+    selllist = []
     for index, row in enumerate(X_test_copy.tail(len(Y_pred)).iterrows()):
         if currentYear != row[0]:  # 換年
             # buy
@@ -53,6 +55,7 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
                 strategyMoney += data["count"] * data["price"]
 
         if Y_pred[index] == "1":
+            buylist.append(row[1]["證券代碼"])
             # print(f"buy {row[1]['證券代碼']}")
             stocksIhav[row[1]["證券代碼"]] = {
                 "count": (strategyMoney / len(Y_pred)) // float(row[1]["收盤價(元)_年"]),
@@ -60,13 +63,19 @@ def strategy(Y_pred: np.ndarray, X_test_copy: pd.DataFrame):
             }
         elif Y_pred[index] == "-1":
             # sell
+            selllist.append(row[1]["證券代碼"])
+            # print(f"sell {row[1]['證券代碼']}")
             if row[1]["證券代碼"] in stocksIhav:
                 strategyMoney -= stocksIhav[row[1]["證券代碼"]]["count"] * float(
                     row[1]["收盤價(元)_年"]
                 )
                 stocksIhav.pop(row[1]["證券代碼"])
     for stock, data in stocksIhav.items():
-        strategyMoney += data["count"] * data["price"]
+        strategyMoney += data["count"] * data["price"]  # 最後一年賣掉
+    print("buylist: ", buylist)
+    print("selllist: ", selllist)
+    buylist = []
+    selllist = []
     return strategyMoney
 
 
@@ -144,6 +153,3 @@ for year in range(1998, 2009):
     strategyMoney = strategy(Y_pred, X_test_strategy)
     print("策略: ", strategyMoney)
     print(f"Count_1: {list(Y_pred).count('1')} Count_-1: {list(Y_pred).count('-1')}")
-
-
-print("平均準確率: ", np.mean(accuracy_list))
